@@ -197,13 +197,18 @@ var selectedShape = false;
 
 function linked(s, t)
 {
-	return data.links.some(function(l) { return (l.source == s && l.target == t)
+	return data.links.filter(function(l) { return (l.source == s && l.target == t)
 														  || (l.source == t && l.target == s); });  
 }
 
 function addLink(s, t)
 {
-	if(!linked(s, t))
+	link = linked(s, t);
+	if(link.length > 0)
+	{
+		data.links.splice(data.links.indexOf(link[0]), 1);
+	}
+	else
 	{
 		data.links.push({source: s, target: t, size: 0});
 		return true;

@@ -12,13 +12,20 @@
       if (hint=="friction" || hint=="strength"){
         norm = Math.floor(100*num)+"%"
       }else {
-        num = Math.round(num)
-        if (num < 11000){
-          norm = (""+num).replace(_ordinalize_re, "$1,")
-        } else if (num < 1000000){
-          norm = Math.floor(num/1000)+"k"
-        } else if (num < 1000000000){
-          norm = (""+Math.floor(num/1000)).replace(_ordinalize_re, "$1,")+"m"
+      	if(num < 1 && num > 0)
+      	{
+      		norm = Math.round(num*100)/100;
+      	}
+      	else
+      	{
+          num = Math.round(num)
+          if (num < 11000){
+            norm = (""+num).replace(_ordinalize_re, "$1,")
+          } else if (num < 1000000){
+            norm = Math.floor(num/1000)+"k"
+          } else if (num < 1000000000){
+            norm = (""+Math.floor(num/1000)).replace(_ordinalize_re, "$1,")+"m"
+          }
         }
       }
       return norm
@@ -26,7 +33,7 @@
     
     var _ranges = {
       strength:[0,1],
-      charge:[-200,200],
+      charge:[-500,500],
       friction:[0,1],
       distance:[0, 10000],
       scale:[1, 20],
