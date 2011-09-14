@@ -10,6 +10,8 @@ circle.node {
 path.hull {
   fill: lightsteelblue;
   fill-opacity: 0.3;
+  stroke: none;
+  stroke-width: 3px;
 }
 line.link {
   stroke: #333;

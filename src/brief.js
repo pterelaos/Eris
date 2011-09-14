@@ -29,6 +29,7 @@ vis.on("click", function() {
       n = data.nodes.push(node);
   expand[i] = true;
 
+  deselect();
   init();
 });
 
@@ -192,6 +193,7 @@ init();
 
 
 var selected = false;
+var selectedShape = false;
 
 function linked(s, t)
 {
@@ -207,6 +209,28 @@ function addLink(s, t)
 		return true;
 	}
 	return false;
+}
+
+function deselect()
+{
+	if(selected)
+	{
+		selected = false;
+		highlight(selectedShape, 1.5);
+		selectedShape = false;
+	}
+}
+
+function select(d, shape)
+{
+  selected = d;
+  selectedShape = shape;
+  highlight(shape, 3);
+}
+
+function highlight(shape, amnt)
+{
+	shape.style["stroke-width"] = amnt + "px";
 }
 
 function init() {
@@ -237,12 +261,21 @@ function init() {
      .attr("d", drawCluster)
      .style("fill", function(d) { return fill(d.group); })
      .on("dblclick", function(d) { expand[d.group] = false; init(); })
+     .on("mouseover", function(d) {
+      	  if(selected)
+      	  {
+      	  	  this.style["stroke"] = "#fdd017";
+      	  }
+      	})
+     .on("mouseout", function(d) {
+      	  	  this.style["stroke"] = "none";
+      	})
      .on("click", function(d) {
         if(selected)
         {
         	 d3.event.cancelBubble = true;
         	 selected.group = d.group;
-        	 selected = false;
+        	 deselect();
           init();
         }
       });
@@ -268,6 +301,18 @@ function init() {
       .attr("cx", function(d) { return d.x; })
       .attr("cy", function(d) { return d.y; })
       .style("fill", function(d) { return fill(d.group); })
+      .on("mouseover", function(d) {
+      	  if(selected != d)
+      	  {
+      	  	  highlight(this, 3);
+      	  }
+      	})
+      .on("mouseout", function(d) {
+      	  if(selected != d)
+      	  {
+      	  	  highlight(this, 1.5);
+      	  }
+      	})
       .on("dblclick", function(d) {
         if (d.size) { expand[d.group] = true; init(); }
       })
@@ -276,11 +321,11 @@ function init() {
         if(selected)
         {
         	 addLink(selected, d);
-        	 selected = false;
+        	 deselect();
         }
         else
         {
-        	selected = d;
+        	select(d, this);
         }
         init();
       });

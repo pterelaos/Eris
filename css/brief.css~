@@ -10,6 +10,8 @@ circle.node {
 path.hull {
   fill: lightsteelblue;
   fill-opacity: 0.3;
+  stroke: #fdd017;
+  stroke-width: 3px;
 }
 line.link {
   stroke: #333;
@@ -80,11 +82,11 @@ rect {
 #dashboard .controls li{
   list-style-type:none;
   float:left;
-  margin:6px 10px 0 0;
+  margin:6px 20px 0 0;
 }
 
 #dashboard .controls li span{
-  font:24px Arial;
+  font:32px Arial;
   margin-left:4px;
 }
 
