@@ -188,8 +188,19 @@ function drawCluster(d) {
 
 // --------------------------------------------------------
 
+var socket = io.connect('http://ec2-122-248-218-152.ap-southeast-1.compute.amazonaws.com:8080');
+  socket.on('connect', function () {
 
-init();
+    socket.on('link', function (s, t) {
+      link(s, t);
+    });
+    
+    socket.on('data', function (d) {
+      data = d;
+      init();
+    });
+  });
+
 
 
 var selected = false;
@@ -201,6 +212,15 @@ function linked(s, t)
 														  || (l.source == t && l.target == s); });  
 }
 
+function link()
+{
+	if(!linked(s, t))
+	{
+	  data.links.push({source: s, target: t, size: 0});
+	  init();
+	}
+}
+
 function addLink(s, t)
 {
 	link = linked(s, t);
@@ -210,7 +230,8 @@ function addLink(s, t)
 	}
 	else
 	{
-		data.links.push({source: s, target: t, size: 0});
+		link(s, t);
+		socket.emit('link', s, t);
 		return true;
 	}
 	return false;
@@ -237,6 +258,10 @@ function highlight(shape, amnt)
 {
 	shape.style["stroke-width"] = amnt + "px";
 }
+
+
+
+init();
 
 function init() {
   if (force) force.stop();
@@ -332,7 +357,6 @@ function init() {
         {
         	select(d, this);
         }
-        init();
       });
 
   node = nodeg.selectAll("circle.node")
