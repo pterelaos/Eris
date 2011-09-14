@@ -12,6 +12,30 @@ var w = 960,     // svg width
     fill = d3.scale.category20();
 
 
+var body = d3.select("body");
+
+
+var vis = d3.select("#viz").append("svg:svg");
+   
+   
+vis.on("click", function() {
+  var point = d3.svg.mouse(this),
+      i = data.nodes.length
+      node = {x: point[0],
+              y: point[1],
+              name:i,
+				  group:i
+              },
+      n = data.nodes.push(node);
+  expand[i] = true;
+
+  init();
+});
+
+
+hullg = vis.append("svg:g");
+linkg = vis.append("svg:g");
+nodeg = vis.append("svg:g");
 
 function noop() { return false; }
 
@@ -131,31 +155,6 @@ function drawCluster(d) {
 
 // --------------------------------------------------------
 
-var body = d3.select("body");
-
-var vis = body.append("svg:svg")
-   .attr("width", w)
-   .attr("height", h);
-   
-   
-vis.on("click", function() {
-  var point = d3.svg.mouse(this),
-      i = data.nodes.length
-      node = {x: point[0],
-              y: point[1],
-              name:i,
-				  group:i
-              },
-      n = data.nodes.push(node);
-  expand[i] = true;
-
-  init();
-});
-
-
-hullg = vis.append("svg:g");
-linkg = vis.append("svg:g");
-nodeg = vis.append("svg:g");
 
 init();
 
@@ -187,7 +186,8 @@ function init() {
       .nodes(net.nodes)
       .links(net.links)
       .size([w, h])
-      .linkDistance(100)
+      .linkDistance(30)
+      .charge(-50)
       .start();
 
   hullg.selectAll("path.hull").remove();

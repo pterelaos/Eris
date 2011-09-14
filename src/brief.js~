@@ -1,43 +1,73 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Clustered Network</title>
-    <script type="text/javascript" src="./d3/d3.js"></script>
-    <script type="text/javascript" src="./d3/d3.geom.js"></script>
-    <script type="text/javascript" src="./d3/d3.layout.js"></script>
-    <style type="text/css">
-svg {
-  border: 1px solid #ccc;
-}
-body {
-  font: 10px sans-serif;
-}
-circle.node {
-  fill: lightsteelblue;
-  stroke: #fff;
-  stroke-width: 1.5px;
-}
-path.hull {
-  fill: lightsteelblue;
-  fill-opacity: 0.3;
-}
-line.link {
-  stroke: #333;
-  stroke-opacity: 0.5;
-  pointer-events: none;
-}
-    </style>
-  </head>
-  <body>
-    <script type="text/javascript">
+
+
+
 var w = 960,     // svg width
     h = 600,     // svg height
     dr = 4,      // default point radius
     off = 15,    // cluster hull offset
     expand = {}, // expanded clusters
-    data, net, force, hullg, hull, linkg, link, nodeg, node,
+    data = {nodes: [], links: []},
+    net, force, hullg, hull, linkg, link, nodeg, node,
     curve = d3.svg.line().interpolate("cardinal-closed").tension(.85),
     fill = d3.scale.category20();
+
+
+var body = d3.select("body");
+
+
+var vis = d3.select("#viz").append("svg:svg");
+   
+   
+vis.on("click", function() {
+  var point = d3.svg.mouse(this),
+      i = data.nodes.length
+      node = {x: point[0],
+              y: point[1],
+              name:i,
+				  group:i
+              },
+      n = data.nodes.push(node);
+  expand[i] = true;
+
+  init();
+});
+
+
+
+
+var settings = {
+	gravity:1,
+	charge:-50,
+	distance:50,
+	scale:1,
+	friction:0.1,
+   strength:1
+};
+
+var sys = {
+      parameters:function(newParams){
+        if (newParams!==undefined){
+          if (!isNaN(newParams.precision)){
+            newParams.precision = Math.max(0, Math.min(1, newParams.precision))
+          }
+          $.each(settings, function(p, v){
+            if (newParams[p]!==undefined) settings[p] = newParams[p]
+          })
+          init();
+        }
+        return settings;
+      }
+};
+
+
+var dashboard = Dashboard("#dashboard", sys);
+
+
+hullg = vis.append("svg:g");
+linkg = vis.append("svg:g");
+nodeg = vis.append("svg:g");
+
+$(window).resize(init);
 
 function noop() { return false; }
 
@@ -157,43 +187,47 @@ function drawCluster(d) {
 
 // --------------------------------------------------------
 
-var body = d3.select("body");
 
-var vis = body.append("svg:svg")
-   .attr("width", w)
-   .attr("height", h);
+init();
 
-d3.json("miserables.json", function(json) {
-  data = json;
-  for (var i=0; i<data.links.length; ++i) {
-    o = data.links[i];
-    o.source = data.nodes[o.source];
-    o.target = data.nodes[o.target];
-  }
 
-  hullg = vis.append("svg:g");
-  linkg = vis.append("svg:g");
-  nodeg = vis.append("svg:g");
+var selected = false;
 
-  init();
+function linked(s, t)
+{
+	return data.links.some(function(l) { return (l.source == s && l.target == t)
+														  || (l.source == t && l.target == s); });  
+}
 
-  vis.attr("opacity", 1e-6)
-    .transition()
-      .duration(1000)
-      .attr("opacity", 1);
-});
+function addLink(s, t)
+{
+	if(!linked(s, t))
+	{
+		data.links.push({source: s, target: t, size: 0});
+		return true;
+	}
+	return false;
+}
 
 function init() {
   if (force) force.stop();
 
   net = network(data, net, getGroup, expand);
+  
+  w = vis[0][0].clientWidth
+  h = vis[0][0].clientHeight
 
   force = d3.layout.force()
       .nodes(net.nodes)
       .links(net.links)
       .size([w, h])
-      .linkDistance(50)
+      .linkDistance(settings.distance)
+      .charge(settings.charge)
+      .friction(1 - settings.friction)
+      .gravity(settings.gravity/10)
+      .linkStrength(settings.strength)
       .start();
+      
 
   hullg.selectAll("path.hull").remove();
   hull = hullg.selectAll("path.hull")
@@ -202,7 +236,17 @@ function init() {
      .attr("class", "hull")
      .attr("d", drawCluster)
      .style("fill", function(d) { return fill(d.group); })
-     .on("dblclick", function(d) { expand[d.group] = false; init(); });
+     .on("dblclick", function(d) { expand[d.group] = false; init(); })
+     .on("click", function(d) {
+        if(selected)
+        {
+        	 d3.event.cancelBubble = true;
+        	 selected.group = d.group;
+        	 selected = false;
+          init();
+        }
+      });
+     ;
 
   link = linkg.selectAll("line.link").data(net.links, linkid);
   link.exit().remove();
@@ -225,6 +269,19 @@ function init() {
       .style("fill", function(d) { return fill(d.group); })
       .on("dblclick", function(d) {
         if (d.size) { expand[d.group] = true; init(); }
+      })
+      .on("click", function(d) {
+        d3.event.cancelBubble = true;
+        if(selected)
+        {
+        	 addLink(selected, d);
+        	 selected = false;
+        }
+        else
+        {
+        	selected = d;
+        }
+        init();
       });
 
   node = nodeg.selectAll("circle.node")
@@ -245,7 +302,3 @@ function init() {
         .attr("cy", function(d) { return d.y; });
   });
 }
-
-    </script>
-  </body>
-</html>

@@ -3,13 +3,28 @@
   <head>
     <title>Force-Directed Layout</title>
     <script src="http://code.jquery.com/jquery-latest.js"></script>
-    <script type="text/javascript" src="./d3/d3.js"></script>
-    <script type="text/javascript" src="./d3/d3.geom.js"></script>
-    <script type="text/javascript" src="./d3/d3.layout.js"></script>
+    <script type="text/javascript" src="./lib/d3/d3.js"></script>
+    <script type="text/javascript" src="./lib/d3/d3.geom.js"></script>
+    <script type="text/javascript" src="./lib/d3/d3.layout.js"></script>
     <link type="text/css" rel="stylesheet" href="css/brief.css"/>
   </head>
   <body>
-    <div id="chart"></div>
-    <script type="text/javascript" src="brief.js"></script>
+  <div id="dashboard">
+    <ul class="controls">
+      <li class="strength">link strength<span class="frob">100%</span></li>
+      <li class="charge">node repulsion <span class="frob">-50</span></li>
+      <li class="distance">link length <span class="frob">50</span></li>
+      <li class="scale">scale<span class="frob">1</span></li>
+      <li class="friction">friction <span class="frob">20%</span></li>
+      <li class="gravity">gravity <span class="frob">1</span></li>
+    </ul>
+  </div>
+  
+    <div id="viz">
+      
+    </div>
+    
+    <script src="src/dashboard.js"></script>
+    <script type="text/javascript" src="src/brief.js"></script>
   </body>
 </html>

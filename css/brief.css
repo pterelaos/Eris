@@ -1,6 +1,4 @@
-svg {
-  border: 1px solid #ccc;
-}
+
 body {
   font: 10px sans-serif;
 }
@@ -19,7 +17,6 @@ line.link {
   pointer-events: none;
 }
 
-
 rect {
   fill: #fff;
 }
@@ -36,4 +33,75 @@ rect {
 
 .link {
   stroke: #999;
+}
+
+
+#viz{
+/*  float:left;*/
+  position:absolute;
+  top:56px;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  padding:0 10px;
+
+  background:#fffff3;
+  border-radius:4px;
+  z-index:1;
+}
+
+
+#chart{
+  background:white;
+/*  position:absolute;*/
+/*  top:10px;*/
+/*  left:270px;*/
+/*  margin:10px 0;*/
+}
+
+
+#dashboard{
+  position:fixed;
+  height:55px;
+  top:10px;
+  left:10px;
+  right:10px;
+  background:#eeeee2 10px 8px no-repeat;
+  border-radius:4px;
+  padding:0;
+}
+
+#dashboard .controls{
+/*  float:left;*/
+  font:12px/32px Arial;
+  margin:0 0 0 10px;
+}
+
+#dashboard .controls li{
+  list-style-type:none;
+  float:left;
+  margin:6px 20px 0 0;
+}
+
+#dashboard .controls li span{
+  font:32px Arial;
+  margin-left:4px;
+}
+
+
+.frob,
+.adjusting:hover{
+  cursor:col-resize;
+}
+
+.frob.adjusting{
+  color:#C98300;
+}
+
+.frob.huge{
+  color:#AA4A02;
+}
+
+.frob.tiny{
+  color:#C1BE85;
 }
