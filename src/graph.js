@@ -3,6 +3,7 @@ define(function () {
     function _init()
     {
         var _data = {nodes: [], links: [], groups: []};
+	var _nextid = 0;
 
 	function _addGroup(g)
 	{
@@ -87,25 +88,27 @@ define(function () {
 
 	    createGroup: function()
 	    {
-		var gid = this.nextid++;
+		var gid = _nextid++;
 		var g = {id:gid, name:gid, gravity:true};
-		return {name:"addGroup", params:[g]};
+		return [{name:"addGroup", params:[g]}];
 	    },
-	    createNode: function(x, y)
+	    createNode: function(xval, yval)
 	    {
-		var nid = this.nextid++;
-		var n = {x:y, y:y, name:nid, id:nid, groups:[]};
+		var nid = _nextid++;
+		var grp = this.createGroup()[0];
+		var n = {x:xval, y:yval, name:nid, id:nid, groups:[grp.params[0].id]};
+		return [grp, {name:'addNode', params:[n]}];
 	    },
 	    createLink: function(node1Id, node2Id)
 	    {
 		if(node1Id != node2Id) {
-		    return {name:"addLink", params:[node1Id, node2Id]};
+		    return [{name:"addLink", params:[node1Id, node2Id]}];
 		}
 		return false;
 	    },
 	    addToGroup: function(nodeId, groupId)
 	    {
-		return {name:'addToGroup', params:[nodeId, groupId]};
+		return [{name:'addToGroup', params:[nodeId, groupId]}];
 	    }
 	 };
 
@@ -118,9 +121,17 @@ define(function () {
 
 	function perform(actions, action)
 	{
-	    if(action)
+	    if(action && action.length > 0)
 	    {
-		return actions[action.name].apply(action.params);
+		var ret = [];
+		action.forEach(function(a) {
+		    var res = actions[a.name].apply(actions, a.params);
+		    if(res){
+			res.forEach(function(e){ret.push(e);});
+		    }
+		});
+		if(ret.length > 0)
+		    return ret;
 	    }
 	    return false;
 	}

@@ -1,10 +1,10 @@
 
-require(["graph"], function(g) {
+require(["src/graph"], function(graphMod) {
 
 
     require.ready(function() {
 
-	var graph = g.init();
+	var graph = graphMod.init();
 
 	var w = 960,     // svg width
      h = 600,     // svg height
@@ -19,14 +19,13 @@ require(["graph"], function(g) {
 
 	var body = d3.select("body");
 	var vis = d3.select("#viz").append("svg:svg");
-	
-	vis.on("click", function() {
-	    var point = d3.svg.mouse(this);
-	    socket.emit('action', {name:'createNode',
-				   params:[point[0], point[1]]});
-	    deselect();
-
-	});
+	var rect = vis.append("svg:rect")
+	    .on("click", function() {
+		var point = d3.svg.mouse(vis[0][0]);
+		socket.emit('action', [{name:'createNode',
+					params:[point[0], point[1]]}]);
+		deselect();
+	    });
 
 	var settings = {
 	    gravity:1,
@@ -101,7 +100,7 @@ require(["graph"], function(g) {
 	    return u<v ? u+"|"+v : v+"|"+u;
 	}
 
-	function getGroup(n) { return n.group; }
+	function getGroup(n) { return n.groups; }
 
 	// constructs the network to visualize
 	function network(data, prev, index, expand) {
@@ -135,7 +134,7 @@ require(["graph"], function(g) {
 		var n = data.nodes[k],
       i = index(n);
 
-		if (expand[i]) {
+		if (true || expand[i]) {
 		    // the node should be directly visible
 		    nm[n.name] = nodes.length;
 		    nodes.push(n);
@@ -166,8 +165,8 @@ require(["graph"], function(g) {
 		var e = data.links[k],
       u = index(e.source),
       v = index(e.target);
-		u = expand[u] ? nm[e.source.name] : nm[u];
-		v = expand[v] ? nm[e.target.name] : nm[v];
+		u = (true || expand[u]) ? nm[e.source.name] : nm[u];
+		v = (true || expand[v]) ? nm[e.target.name] : nm[v];
 		var i = (u<v ? u+"|"+v : v+"|"+u),
       l = lm[i] || (lm[i] = {source:u, target:v, size:0});
 		l.size += 1;
@@ -214,7 +213,9 @@ require(["graph"], function(g) {
 		socket.emit(window.location.hash);
 	    }
 	    socket.on('setgraph', function(graphData){
-
+		graph.setData(graphData);
+		data = graph.data;
+		init();
 	    });
 	    socket.on('action', function (action) {
 		graph.clientAction(action);
@@ -228,9 +229,13 @@ require(["graph"], function(g) {
 	    if (force) force.stop();
 
 	    net = network(data, net, getGroup, expand);
+
+	    var v = vis[0][0];
 	    
-	    w = vis[0][0].clientWidth;
-	    h = vis[0][0].clientHeight;
+	    w = v.clientWidth;
+	    h = v.clientHeight;
+	    
+	    rect.attr("width", w).attr("height", h);
 
 	    force = d3.layout.force()
 		.nodes(net.nodes)
@@ -265,9 +270,9 @@ require(["graph"], function(g) {
 		    if(selected)
 		    {
 			d3.event.cancelBubble = true;
-			selected.group = d.group;
+			socket.emit('action', [{name:'addToGroup',
+						params:[selected.id, d.group]}]);
 			deselect();
-			init();
 		    }
 		});
 	    ;
@@ -311,8 +316,8 @@ require(["graph"], function(g) {
 		    d3.event.cancelBubble = true;
 		    if(selected)
 		    {
-			socket.emit('action', {name:'createNode',
-					       params:[selected.id, d.id]});
+			socket.emit('action', [{name:'createLink',
+						params:[selected.id, d.id]}]);
 			deselect();
 		    }
 		    else
