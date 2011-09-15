@@ -6,7 +6,9 @@
     <script type="text/javascript" src="./lib/d3/d3.js"></script>
     <script type="text/javascript" src="./lib/d3/d3.geom.js"></script>
     <script type="text/javascript" src="./lib/d3/d3.layout.js"></script>
-    <script src="http://ec2-175-41-173-84.ap-southeast-1.compute.amazonaws.com:8080/socket.io/socket.io.js"></script>
+    <script src="http://kangaloon:8080/socket.io/socket.io.js"></script>
+    
+    <script src="lib/require.js"></script>
     <link type="text/css" rel="stylesheet" href="css/brief.css"/>
   </head>
   <body>
@@ -25,6 +27,9 @@
     </div>
     
     <script src="src/dashboard.js"></script>
-    <script type="text/javascript" src="src/brief.js"></script>
+<!--    <script type="text/javascript" src="src/brief.js"></script> -->
+    <script data-main="src/brief" src="lib/require.js"></script>
+
+  </body>
   </body>
 </html>
