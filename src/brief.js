@@ -116,23 +116,26 @@ require(["src/graph"], function(graphMod) {
 	    // process previous nodes for reuse or centroid calculation
 	    if (prev) {
 		prev.nodes.forEach(function(n) {
-		    var i = index(n), o;
-		    if (n.size > 0) {
-			gn[i] = n;
-			n.size = 0;
-		    } else {
-			o = gc[i] || (gc[i] = {x:0,y:0,count:0});
-			o.x += n.x;
-			o.y += n.y;
-			o.count += 1;
-		    }
+		    var groups = index(n), o;
+		    groups.forEach(function(i){
+			if (n.size > 0) {
+			    gn[i] = n;
+			    n.size = 0;
+			} else {
+			    o = gc[i] || (gc[i] = {x:0,y:0,count:0});
+			    o.x += n.x;
+			    o.y += n.y;
+			    o.count += 1;
+			}
+		    });
 		});
 	    }
 
 	    // determine nodes
 	    for (var k=0; k<data.nodes.length; ++k) {
 		var n = data.nodes[k],
-      i = index(n);
+      groups = index(n);
+		groups.forEach(function(i){
 
 		if (true || expand[i]) {
 		    // the node should be directly visible
@@ -140,8 +143,8 @@ require(["src/graph"], function(graphMod) {
 		    nodes.push(n);
 		    if (gn[i]) {
 			// place new nodes at cluster location (plus jitter)
-			n.x = gn[i].x + Math.random();
-			n.y = gn[i].y + Math.random();
+			//n.x = gn[i].x + Math.random();
+			//n.y = gn[i].y + Math.random();
 		    }
 		} else {
 		    // the node is part of a collapsed cluster
@@ -158,6 +161,7 @@ require(["src/graph"], function(graphMod) {
 		    l.size += 1;
 		    l.nodes.push(n);
 		}
+		});
 	    }
 
 	    // determine links
@@ -183,14 +187,15 @@ require(["src/graph"], function(graphMod) {
 	    for (var k=0; k<nodes.length; ++k) {
 		var n = nodes[k];
 		if (n.size) continue;
-		var i = index(n),
-      l = h[i] || (h[i] = []);
-		l.push([n.x-offset, n.y-offset]);
-		l.push([n.x-offset, n.y+offset]);
-		l.push([n.x+offset, n.y-offset]);
-		l.push([n.x+offset, n.y+offset]);
+		var groups = index(n);
+		groups.forEach(function(i){
+		    var l = h[i] || (h[i] = []);
+		    l.push([n.x-offset, n.y-offset]);
+		    l.push([n.x-offset, n.y+offset]);
+		    l.push([n.x+offset, n.y-offset]);
+		    l.push([n.x+offset, n.y+offset]);
+		});
 	    }
-
 	    // create convex hulls
 	    var hulls = [];
 	    for (i in h) {
