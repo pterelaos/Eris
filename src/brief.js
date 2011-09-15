@@ -16,6 +16,13 @@ var body = d3.select("body");
 
 
 var vis = d3.select("#viz").append("svg:svg");
+
+function newnode(n)
+{
+  data.nodes.push(n);
+  expand[n.id] = true;
+  init();
+}
    
    
 vis.on("click", function() {
@@ -24,13 +31,15 @@ vis.on("click", function() {
       node = {x: point[0],
               y: point[1],
               name:i,
-				  group:i
-              },
-      n = data.nodes.push(node);
-  expand[i] = true;
-
+	      group:i,
+              id:i
+              };
+//      n = data.nodes.push(node);
+//  expand[i] = true;
+  newnode(node, i);
+  socket.emit('node', {x:point[0], y:point[1], name:i, group:i, id:i});
   deselect();
-  init();
+
 });
 
 
@@ -188,16 +197,20 @@ function drawCluster(d) {
 
 // --------------------------------------------------------
 
-var socket = io.connect('http://ec2-122-248-218-152.ap-southeast-1.compute.amazonaws.com:8080');
+var socket = io.connect('http://ec2-175-41-173-84.ap-southeast-1.compute.amazonaws.com:8080');
   socket.on('connect', function () {
 
-    socket.on('link', function (s, t) {
-      link(s, t);
+    socket.on('link', function (l) {
+      createlink(l.s, l.t);
     });
     
     socket.on('data', function (d) {
       data = d;
+      data.nodes.forEach(function(n){expand[n.id] = true;});
       init();
+    });
+    socket.on('node', function(n) {
+      newnode(n);
     });
   });
 
@@ -212,13 +225,20 @@ function linked(s, t)
 														  || (l.source == t && l.target == s); });  
 }
 
-function link()
+function createlink(sid, tid)
 {
+  s = getNode(sid);
+  t = getNode(tid);
 	if(!linked(s, t))
 	{
 	  data.links.push({source: s, target: t, size: 0});
 	  init();
 	}
+}
+
+function getNode(id)
+{
+  return data.nodes.filter(function(n){return id == n.id;})[0];
 }
 
 function addLink(s, t)
@@ -230,8 +250,8 @@ function addLink(s, t)
 	}
 	else
 	{
-		link(s, t);
-		socket.emit('link', s, t);
+		createlink(s.id, t.id);
+		socket.emit('link', {s:s.id, t:t.id});
 		return true;
 	}
 	return false;
