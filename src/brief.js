@@ -20,15 +20,29 @@ require(["src/graph"], function(graphMod) {
 	var body = d3.select("body");
 	var vis = d3.select("#viz").append("svg:svg");
 	var rect = vis.append("svg:rect")
-	    .on("click", function() {
+	    .on("keypress", function() {
+		if(d3.event.charCode == 'g'){
 		var point = d3.svg.mouse(vis[0][0]);
-		socket.emit('action', [{name:'createNode',
-					params:[point[0], point[1]]}]);
+		deselect();
+		}
+	    })
+//	    .on("click", function(){deselect();})
+	    .on("click", function() {
+		var e = d3.event;
+		var point = d3.svg.mouse(vis[0][0]);
+		if(d3.event.ctrlKey){
+		    socket.emit('action', [{name:'createGroup',
+					    params:[point[0], point[1]]}]);
+		}
+		else {
+		    socket.emit('action', [{name:'createNode',
+					    params:[point[0], point[1]]}]);
+		}
 		deselect();
 	    });
 
 	var settings = {
-	    gravity:1,
+	    gravity:0.2,
 	    charge:-50,
 	    distance:50,
 	    scale:1,
@@ -100,109 +114,115 @@ require(["src/graph"], function(graphMod) {
 	    return u<v ? u+"|"+v : v+"|"+u;
 	}
 
-	function getGroup(n) { return n.groups; }
+	function isVisible(node)
+	{
+	    return true;
+	    if(node.group) return node.visble && isVisible(node.group);
+	    return node.visible;
+	}
+
+	function getVisible(node)
+	{
+	    if(node){
+		if(isVisible(node)) return node;
+		return getVisible(node.group);
+	    }
+	    return false;
+	}
+
+	function getGroup(node)
+	{
+	    return graph.getGroup(node.group);
+	}
 
 	// constructs the network to visualize
-	function network(data, prev, index, expand) {
+	function network(data, prev, expand) {
 	    expand = expand || {};
 	    var gm = {},    // group map
 	 nm = {},    // node map
 	 lm = {},    // link map
 	 gn = {},    // previous group nodes
-	 gc = {},    // previous group centroids
 	 nodes = [], // output nodes
 	 links = []; // output links
 
-	    // process previous nodes for reuse or centroid calculation
-	    if (prev) {
-		prev.nodes.forEach(function(n) {
-		    var groups = index(n), o;
-		    groups.forEach(function(i){
-			if (n.size > 0) {
-			    gn[i] = n;
-			    n.size = 0;
-			} else {
-			    o = gc[i] || (gc[i] = {x:0,y:0,count:0});
-			    o.x += n.x;
-			    o.y += n.y;
-			    o.count += 1;
-			}
-		    });
-		});
-	    }
+	    data.groups.forEach(function(group){
+		if(isVisible(group)){
+		    nm[group] = nodes.length;
+		    nodes.push(group);
+		    group.size = 0;
+		    var parent = getGroup(group);
+		    if(parent)
+		    {
+			links.push({source:group,
+				    target:parent,
+				    strength:parent.strength,
+				    size:0});
+		    }
+		}
+//		else {
+//		    var p = getVisible(group);
+//		    if(p)
+	    });
 
 	    // determine nodes
-	    for (var k=0; k<data.nodes.length; ++k) {
-		var n = data.nodes[k],
-      groups = index(n);
-		groups.forEach(function(i){
-
-		if (true || expand[i]) {
-		    // the node should be directly visible
-		    nm[n.name] = nodes.length;
-		    nodes.push(n);
-		    if (gn[i]) {
-			// place new nodes at cluster location (plus jitter)
-			//n.x = gn[i].x + Math.random();
-			//n.y = gn[i].y + Math.random();
+	    data.nodes.forEach(function(node){
+		if(isVisible(node)) {
+		    nm[node] = nodes.length;
+		    nodes.push(node);
+		    var group = getGroup(node);
+		    if(group){
+			links.push({source:node,
+				    target:group,
+				    strength:group.strength,
+				    size:0});
 		    }
-		} else {
-		    // the node is part of a collapsed cluster
-		    var l = gm[i] || (gm[i]=gn[i]) || (gm[i]={group:i, size:0, nodes:[]});
-		    if (l.size == 0) {
-			// if new cluster, add to set and position at centroid of leaf nodes
-			nm[i] = nodes.length;
-			nodes.push(l);
-			if (gc[i]) {
-			    l.x = gc[i].x / gc[i].count;
-			    l.y = gc[i].y / gc[i].count;
-			}
-		    }
-		    l.size += 1;
-		    l.nodes.push(n);
 		}
-		});
-	    }
+//		else {
+//		}
+	    });
 
-	    // determine links
-	    for (k=0; k<data.links.length; ++k) {
-		var e = data.links[k],
-      u = index(e.source),
-      v = index(e.target);
-		u = (true || expand[u]) ? nm[e.source.name] : nm[u];
-		v = (true || expand[v]) ? nm[e.target.name] : nm[v];
-		var i = (u<v ? u+"|"+v : v+"|"+u),
-      l = lm[i] || (lm[i] = {source:u, target:v, size:0});
-		l.size += 1;
-	    }
-	    for (i in lm) { links.push(lm[i]); }
+	    data.links.forEach(function(l){
+		var u = getVisible(l.source),
+		v = getVisible(l.target);
+//TODO: implement properly
+		links.push(l);
+	    });
+
 
 	    return {nodes: nodes, links: links};
 	}
 
-	function convexHulls(nodes, index, offset) {
+	function convexHulls(nodes, offset) {
 	    var h = {};
 
 	    // create point sets
-	    for (var k=0; k<nodes.length; ++k) {
-		var n = nodes[k];
-		if (n.size) continue;
-		var groups = index(n);
-		groups.forEach(function(i){
-		    var l = h[i] || (h[i] = []);
-		    l.push([n.x-offset, n.y-offset]);
-		    l.push([n.x-offset, n.y+offset]);
-		    l.push([n.x+offset, n.y-offset]);
-		    l.push([n.x+offset, n.y+offset]);
-		});
-	    }
+	    nodes.forEach(function(n){
+		if(n.isgroup) insertPoint(h, n.id, n, offset);
+		var g = getGroup(n);
+		var i = 0;
+		while(g){
+		    insertPoint(h, g.id, n, offset + (i++) * 2);
+		    g = getGroup(g);
+		}
+	    });
 	    // create convex hulls
 	    var hulls = [];
-	    for (i in h) {
+	    for (var i in h) {
 		hulls.push({group: i, path: d3.geom.hull(h[i])});
 	    }
 
 	    return hulls;
+	}
+
+	function insertPoint(h, g, n, offset)
+	{
+	    if(g){
+		var l = h[g] || (h[g] = []);
+		l.push([n.x-offset, n.y-offset]);
+		l.push([n.x-offset, n.y+offset]);
+		l.push([n.x+offset, n.y-offset]);
+		l.push([n.x+offset, n.y+offset]);
+	    }
 	}
 
 	function drawCluster(d) {
@@ -215,7 +235,7 @@ require(["src/graph"], function(graphMod) {
 	socket.on('connect', function () {
 	    if(window.location.hash)
 	    {
-		socket.emit(window.location.hash);
+		socket.emit('select', window.location.hash);
 	    }
 	    socket.on('setgraph', function(graphData){
 		graph.setData(graphData);
@@ -233,7 +253,7 @@ require(["src/graph"], function(graphMod) {
 	function init() {
 	    if (force) force.stop();
 
-	    net = network(data, net, getGroup, expand);
+	    net = network(data, net, expand);
 
 	    var v = vis[0][0];
 	    
@@ -250,13 +270,13 @@ require(["src/graph"], function(graphMod) {
 		.charge(settings.charge)
 		.friction(1 - settings.friction)
 		.gravity(settings.gravity/10)
-		.linkStrength(settings.strength)
+		.linkStrength(function(l){ return l.strength ?l.strength : settings.strength;})
 		.start();
 	    
 
 	    hullg.selectAll("path.hull").remove();
 	    hull = hullg.selectAll("path.hull")
-		.data(convexHulls(net.nodes, getGroup, off))
+		.data(convexHulls(net.nodes, off))
 		.enter().append("svg:path")
 		.attr("class", "hull")
 		.attr("d", drawCluster)
@@ -275,8 +295,14 @@ require(["src/graph"], function(graphMod) {
 		    if(selected)
 		    {
 			d3.event.cancelBubble = true;
-			socket.emit('action', [{name:'addToGroup',
-						params:[selected.id, d.group]}]);
+			if(selected.isgroup){
+			    socket.emit('action', [{name:'setParent',
+						    params:[selected.id, d.group]}]);
+			}
+			else {
+			    socket.emit('action', [{name:'addToGroup',
+						    params:[selected.id, d.group]}]);
+			}
 			deselect();
 		    }
 		});
@@ -291,7 +317,10 @@ require(["src/graph"], function(graphMod) {
 		.attr("y1", function(d) { return d.source.y; })
 		.attr("x2", function(d) { return d.target.x; })
 		.attr("y2", function(d) { return d.target.y; })
-		.style("stroke-width", function(d) { return d.size || 1; });  
+		.style("stroke-width", function(d) { return d.size || 1; })
+.style("stroke-dasharray", function(d) { return d.source.isgroup || d.target.isgroup?
+					     "5, 2" : "none";});
+	    
 	    link = linkg.selectAll("line.link");
 
 	    node = nodeg.selectAll("circle.node").data(net.nodes, nodeid);
@@ -321,8 +350,16 @@ require(["src/graph"], function(graphMod) {
 		    d3.event.cancelBubble = true;
 		    if(selected)
 		    {
-			socket.emit('action', [{name:'createLink',
-						params:[selected.id, d.id]}]);
+			if(selected.isgroup && d.isgroup){
+			    socket.emit('action', graph.buildAction('setParent', selected.id, d.id));
+			}
+			else if (d.isgroup){
+			    socket.emit('action', graph.buildAction('addToGroup', selected.id, d.id));
+			}
+			else {
+			    socket.emit('action', [{name:'createLink',
+						    params:[selected.id, d.id]}]);
+			}
 			deselect();
 		    }
 		    else
@@ -336,7 +373,7 @@ require(["src/graph"], function(graphMod) {
 
 	    force.on("tick", function() {
 		if (!hull.empty()) {
-		    hull.data(convexHulls(net.nodes, getGroup, off))
+		    hull.data(convexHulls(net.nodes, off))
 			.attr("d", drawCluster);
 		}
 

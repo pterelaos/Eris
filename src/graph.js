@@ -71,52 +71,99 @@ define(function () {
 	    var g = _getGroup(gid);
 	    if(n && g)
 	    {
-		var i = n.groups.indexOf(gid);
-		if(i >= 0)
-		{
-		    n.groups.splice(i, 1);
-		}
-		else
-		{
-		    n.groups.push(gid);
-		}
+		if(n.group == gid) n.group = false;
+		else n.group = gid;
 	    }
+	}
+
+	function _buildAction(name)
+	{
+	    var args = [];
+	    for(var i = 1;i<arguments.length;++i)
+		args.push(arguments[i]);
+	    return [{name:name, params:args}];
 	}
 
 	var _baseActions = {
 	    nextId : 0,
 
-	    createGroup: function()
+	    createGroup: function(x, y)
 	    {
-		var gid = _nextid++;
-		var g = {id:gid, name:gid, gravity:true};
-		return [{name:"addGroup", params:[g]}];
+		var gid = "" + _nextid++;
+		var g = {x:x, y:y,
+			 id:gid, name:gid,
+			 strength:0.8,
+			 group:false,
+			 visible:true,
+			 isgroup:true};
+		return _buildAction("addGroup", g);
 	    },
 	    createNode: function(xval, yval)
 	    {
 		var nid = _nextid++;
-		var grp = this.createGroup()[0];
-		var n = {x:xval, y:yval, name:nid, id:nid, groups:[grp.params[0].id]};
-		return [grp, {name:'addNode', params:[n]}];
+		var n = {x:xval, y:yval, name:nid, id:nid, group:false, size:1, visible:true};
+		return _buildAction('addNode', n);
+	    },
+	    editNode: function(nodeid, param, value)
+	    {
+		if(_getNode(nodeid))
+		    return _buildAction('editNode', nodeid, param, value);
+		return false;
+	    },
+	    editGroup: function(id, param, value)
+	    {
+		if(_getGroup(id))
+		    return _buildAction('editGroup', id, param, value);
+		return false;
 	    },
 	    createLink: function(node1Id, node2Id)
 	    {
-		if(node1Id != node2Id) {
-		    return [{name:"addLink", params:[node1Id, node2Id]}];
+		if(node1Id != node2Id && _getNode(node1Id) && _getNode(node2Id)) {
+		    return _buildAction("addLink", node1Id, node2Id);
 		}
 		return false;
 	    },
 	    addToGroup: function(nodeId, groupId)
 	    {
-		return [{name:'addToGroup', params:[nodeId, groupId]}];
+		if(_getNode(nodeId) && _getGroup(groupId))
+		{
+		    return _buildAction('addToGroup', nodeId, groupId);
+		}
+		return false;
+	    },
+	    setParent: function(child, parent)
+	    {
+		if(_getGroup(child) && _getGroup(parent) && child != parent)
+		    return _buildAction('setParent', child, parent);
+		return false;
 	    }
 	 };
 
-	var _clientActions = {
+	var _client = {
 	    addGroup: _addGroup,
 	    addLink: _createLink,
 	    addNode: _addNode,
-	    addToGroup: _addToGroup
+	    addToGroup: _addToGroup,
+	    setParent: function(cid, pid)
+	    {
+		var child = _getGroup(cid),
+		parent = _getGroup(pid);
+		if(child)
+		{
+		    child.group = child.group == pid ? false : pid;
+		}
+	    },
+	    editNode: function(id, param, value)
+	    {
+		var n = _getNode(id);
+		if(n)
+		    n[param] = value;
+	    },
+	    editGroup: function(gid, param, value)
+	    {
+		var g = _getGroup(gid);
+		if(g) g[param] = value;
+	    }
 	};
 
 	function perform(actions, action)
@@ -146,13 +193,15 @@ define(function () {
 	    },
 	    clientAction: function(action)
 	    {
-		return perform(_clientActions, action);
+		return perform(_client, action);
 	    },
 	    setData: function(newData)
 	    {
 		_data = newData;
 		this.data = _data;
-	    }
+	    },
+	    buildAction: _buildAction,
+	    getGroup:_getGroup
 	};
     }
 
