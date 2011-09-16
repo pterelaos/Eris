@@ -34,12 +34,14 @@ define(function () {
 
 	function _addNode(node)
 	{
-	    _data.nodes.push(node);
+	    if(node)
+		_data.nodes[node.id] = node;
 	}
 
 	function _getNode(id)
 	{
-	    return  filterById(_data.nodes, id)[0];
+//	    return  filterById(_data.nodes, id)[0];
+	    return _data.nodes[id];
 	}
 
 	function _getGroup(id)
@@ -61,7 +63,7 @@ define(function () {
 		_deleteLinks(links);
 	    }
 	    else {
-		_data.links.push({source: n1, target: n2, size: 0});
+		_data.links.push({source: n1.id, target: n2.id, size: 0});
 	    }
 	}
 

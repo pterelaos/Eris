@@ -44,7 +44,7 @@ require(["src/graph"], function(graphMod) {
 	var settings = {
 	    gravity:0.2,
 	    charge:-50,
-	    distance:50,
+	    distance:100,
 	    scale:1,
 	    friction:0.1,
 	    strength:1
@@ -182,8 +182,8 @@ require(["src/graph"], function(graphMod) {
 	    });
 
 	    data.links.forEach(function(l){
-		var u = getVisible(l.source),
-		v = getVisible(l.target);
+		var u = data.nodes[l.source],
+		v = data.nodes[l.target];
 //TODO: implement properly
 		links.push(l);
 	    });
@@ -327,10 +327,11 @@ require(["src/graph"], function(graphMod) {
 	    node.exit().remove();
 	    node.enter().append("svg:circle")
 		.attr("class", function(d) { return "node" + (d.size?"":" leaf"); })
-		.attr("r", function(d) { return d.size ? d.size + dr : dr+1; })
+		.attr("r", function(d) { return 2*(d.size ? d.size + dr : dr+1); })
 		.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; })
-		.style("fill", function(d) { return fill(d.group); })
+//		.style("fill", function(d) { return fill(d.group); })
+		.style("fill", function(d) { return d.isgroup ? "#aec7e8" : "#1f77b4";})
 		.on("mouseover", function(d) {
       		    if(selected != d)
       		    {
@@ -353,8 +354,11 @@ require(["src/graph"], function(graphMod) {
 			if(selected.isgroup && d.isgroup){
 			    socket.emit('action', graph.buildAction('setParent', selected.id, d.id));
 			}
-			else if (d.isgroup){
+			else if (d.isgroup) {
 			    socket.emit('action', graph.buildAction('addToGroup', selected.id, d.id));
+			}
+			else if (selected.isgroup) {
+			    socket.emit('action', graph.buildAction('addToGroup', d.id, selected.id));
 			}
 			else {
 			    socket.emit('action', [{name:'createLink',
