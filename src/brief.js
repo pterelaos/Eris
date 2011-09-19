@@ -78,6 +78,7 @@ require(["src/graph"], function(graphMod) {
 		selected = false;
 		highlight(selectedShape, 1.5);
 		selectedShape = false;
+		selectedShape.style["stroke"] = "#fff";
 	    }
 	}
 
@@ -86,6 +87,7 @@ require(["src/graph"], function(graphMod) {
 	    selected = d;
 	    selectedShape = shape;
 	    highlight(shape, 3);
+            selectedShape.style["stroke"] = "#fdd017";
 	}
 
 	function highlight(shape, amnt)
@@ -185,7 +187,7 @@ require(["src/graph"], function(graphMod) {
 		var u = data.nodes[l.source],
 		v = data.nodes[l.target];
 //TODO: implement properly
-		links.push(l);
+		links.push({source:u, target:v});
 	    });
 
 
@@ -331,7 +333,7 @@ require(["src/graph"], function(graphMod) {
 		.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; })
 //		.style("fill", function(d) { return fill(d.group); })
-		.style("fill", function(d) { return d.isgroup ? "#aec7e8" : "#1f77b4";})
+		.style("fill", function(d) { return d.isgroup ? fill(d.id) : "#1f77b4";})
 		.on("mouseover", function(d) {
       		    if(selected != d)
       		    {

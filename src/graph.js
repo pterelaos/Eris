@@ -58,7 +58,7 @@ define(function () {
 	{
 	    var n1 = _getNode(node1Id);
 	    var n2 = _getNode(node2Id);
-	    var links = _getLinks(n1, n2);
+	    var links = _getLinks(node1Id, node2Id);
 	    if(links.length > 0) {
 		_deleteLinks(links);
 	    }
